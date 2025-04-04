@@ -70,7 +70,7 @@ pub(crate) const P2P_CLIENT_VERSION: &str = env!("RETH_P2P_CLIENT_VERSION");
 /// reth/v{major}.{minor}.{patch}/{OS}
 /// ```
 pub fn default_extra_data() -> String {
-    format!("reth/v{}/{}", env!("CARGO_PKG_VERSION"), std::env::consts::OS)
+    format!("prism-reth/v{}", env!("CARGO_PKG_VERSION"))
 }
 
 /// The default extra data in bytes.
