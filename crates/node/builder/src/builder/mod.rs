@@ -245,7 +245,7 @@ impl<DB, ChainSpec: EthChainSpec> NodeBuilder<DB, ChainSpec> {
     ) -> WithLaunchContext<
         NodeBuilder<Arc<reth_db::test_utils::TempDatabase<reth_db::DatabaseEnv>>, ChainSpec>,
     > {
-        let path = reth_db::test_utils::tempdir_path();
+        let (temp_dir, path) = reth_db::test_utils::create_temp_dir();
         self.testing_node_with_datadir(task_executor, path)
     }
 

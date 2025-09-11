@@ -78,18 +78,18 @@ pub mod test_utils {
 
     impl<DB: std::fmt::Debug> std::fmt::Debug for TempDatabase<DB> {
         fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            f.debug_struct("TempDatabase").field("db", &self.db).field("path", &self.path).finish()
+            f.debug_struct("TempDatabase").field("db", &self.db).field("path", self.path()).finish()
         }
     }
 
-    impl<DB> Drop for TempDatabase<DB> {
-        fn drop(&mut self) {
-            if let Some(db) = self.db.take() {
-                drop(db);
-                let _ = reth_fs_util::remove_dir_all(&self.path);
-            }
-        }
-    }
+    // impl<DB> Drop for TempDatabase<DB> {
+    //     fn drop(&mut self) {
+    //         if let Some(db) = self.db.take() {
+    //             drop(db);
+    //             let _ = reth_fs_util::remove_dir_all(&self.path);
+    //         }
+    //     }
+    // }
 
     impl<DB> TempDatabase<DB> {
         /// Create new [`TempDatabase`] instance.
@@ -160,15 +160,17 @@ pub mod test_utils {
     }
 
     /// Get a temporary directory path to use for the database
-    pub fn tempdir_path() -> PathBuf {
-        let builder = tempfile::Builder::new().prefix("reth-test-").rand_bytes(8).tempdir();
-        builder.expect(ERROR_TEMPDIR).path().to_path_buf()
+    #[track_caller]
+    pub fn create_temp_dir() -> (TempDir, PathBuf) {
+        let temp_dir = tempfile::Builder::new().prefix("reth-test-").rand_bytes(8).tempdir().expect(ERROR_TEMPDIR);
+        let path = temp_dir.path().to_path_buf();
+        (temp_dir, path)
     }
 
     /// Create read/write database for testing
     #[track_caller]
     pub fn create_test_rw_db() -> Arc<TempDatabase<DatabaseEnv>> {
-        let path = tempdir_path();
+        let (temp_dir, path) = create_temp_dir();
         let emsg = format!("{ERROR_DB_CREATION}: {path:?}");
 
         let db = init_db(
@@ -200,7 +202,7 @@ pub mod test_utils {
         let args = DatabaseArguments::new(ClientVersion::default())
             .with_max_read_transaction_duration(Some(MaxReadTransactionDuration::Unbounded));
 
-        let path = tempdir_path();
+        let (temp_dir, path) = create_temp_dir();
         {
             init_db(path.as_path(), args.clone()).expect(ERROR_DB_CREATION);
         }

@@ -119,9 +119,11 @@ async fn test_custom_block_priority_config() {
     // 2. End-of-block custom tx
     let wallet = Arc::new(Mutex::new(Wallet::default().with_chain_id(chain_spec.chain().into())));
 
+    let (temp_dir, path) = reth_db::test_utils::create_temp_dir();
+    
     // Configure and launch the node.
     let config = NodeConfig::new(chain_spec).with_datadir_args(DatadirArgs {
-        datadir: reth_db::test_utils::tempdir_path().into(),
+        datadir: path.into(),
         ..Default::default()
     });
     let db = create_test_rw_db_with_path(
