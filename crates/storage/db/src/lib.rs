@@ -78,7 +78,7 @@ pub mod test_utils {
 
     impl<DB: std::fmt::Debug> std::fmt::Debug for TempDatabase<DB> {
         fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            f.debug_struct("TempDatabase").field("db", &self.db).field("path", self.path()).finish()
+            f.debug_struct("TempDatabase").field("db", &self.db).field("path", &self.path()).finish()
         }
     }
 
