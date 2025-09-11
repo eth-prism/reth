@@ -69,7 +69,7 @@ pub mod test_utils {
     /// A database will delete the db dir when dropped.
     pub struct TempDatabase<DB> {
         db: Option<DB>,
-        path: PathBuf,
+        temp_dir: TempDir,
         /// Executed right before a database transaction is created.
         pre_tx_hook: RwLock<Box<dyn Fn() + Send + Sync>>,
         /// Executed right after a database transaction is created.
@@ -93,10 +93,10 @@ pub mod test_utils {
 
     impl<DB> TempDatabase<DB> {
         /// Create new [`TempDatabase`] instance.
-        pub fn new(db: DB, path: PathBuf) -> Self {
+        pub fn new(db: DB, temp_dir: TempDir) -> Self {
             Self {
                 db: Some(db),
-                path,
+                temp_dir,
                 pre_tx_hook: RwLock::new(Box::new(|| ())),
                 post_tx_hook: RwLock::new(Box::new(|| ())),
             }
@@ -109,7 +109,7 @@ pub mod test_utils {
 
         /// Returns the path to the database.
         pub fn path(&self) -> &Path {
-            &self.path
+            self.temp_dir.path()
         }
 
         /// Convert temp database into inner.
@@ -162,7 +162,11 @@ pub mod test_utils {
     /// Get a temporary directory path to use for the database
     #[track_caller]
     pub fn create_temp_dir() -> (TempDir, PathBuf) {
-        let temp_dir = tempfile::Builder::new().prefix("reth-test-").rand_bytes(8).tempdir().expect(ERROR_TEMPDIR);
+        let temp_dir = tempfile::Builder::new()
+            .prefix("reth-test-")
+            .rand_bytes(8)
+            .tempdir()
+            .expect(ERROR_TEMPDIR);
         let path = temp_dir.path().to_path_buf();
         (temp_dir, path)
     }
@@ -180,20 +184,26 @@ pub mod test_utils {
         )
         .expect(&emsg);
 
-        Arc::new(TempDatabase::new(db, path))
+        Arc::new(TempDatabase::new(db, temp_dir))
     }
 
     /// Create read/write database for testing
     #[track_caller]
     pub fn create_test_rw_db_with_path<P: AsRef<Path>>(path: P) -> Arc<TempDatabase<DatabaseEnv>> {
         let path = path.as_ref().to_path_buf();
+        let temp_dir = tempfile::Builder::new()
+            .prefix("reth-test-")
+            .rand_bytes(8)
+            .tempdir_in(&path)
+            .expect(ERROR_TEMPDIR);
+        let db_path = temp_dir.path().to_path_buf();
         let db = init_db(
-            path.as_path(),
+            &db_path,
             DatabaseArguments::new(ClientVersion::default())
                 .with_max_read_transaction_duration(Some(MaxReadTransactionDuration::Unbounded)),
         )
         .expect(ERROR_DB_CREATION);
-        Arc::new(TempDatabase::new(db, path))
+        Arc::new(TempDatabase::new(db, temp_dir))
     }
 
     /// Create read only database for testing
@@ -207,7 +217,7 @@ pub mod test_utils {
             init_db(path.as_path(), args.clone()).expect(ERROR_DB_CREATION);
         }
         let db = open_db_read_only(path.as_path(), args).expect(ERROR_DB_OPEN);
-        Arc::new(TempDatabase::new(db, path))
+        Arc::new(TempDatabase::new(db, temp_dir))
     }
 }
 
