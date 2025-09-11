@@ -267,6 +267,8 @@ impl<DB, ChainSpec: EthChainSpec> NodeBuilder<DB, ChainSpec> {
         let data_dir =
             path.unwrap_or_chain_default(self.config.chain.chain(), self.config.datadir.clone());
 
+        std::fs::create_dir_all(data_dir.db()).expect("Failed to create database directory");
+        
         let db = reth_db::test_utils::create_test_rw_db_with_path(data_dir.db());
 
         WithLaunchContext { builder: self.with_database(db), task_executor }
